@@ -159,6 +159,9 @@ if $OPT_INSTALL_MONGODB ; then
 
     echo "MongoDB 4.4 installation..."
 
+    # Официальная документация по установке MongoDB 4.4 на Ubuntu 20.4 приведена 
+    # https://www.mongodb.com/docs/v4.4/tutorial/install-mongodb-on-ubuntu/?_ga=2.156300795.1195631599.1658911956-375212060.1658911955"
+
     if ! [ -f /usr/bin/mongod ]; then
 
         # Get official mongodb 4.4 and install it
@@ -300,8 +303,8 @@ fi
 # Set permisions (allow remote update /var/www)
 
 sudo chown -R admin:admin /var/www
-sudo chown -R admin:admin /opt/skillforce-update
 sudo chown -R admin:admin /opt/skillforce
+sudo chown -R admin:admin /opt/skillforce-update
 sudo chown -R admin:admin /opt/skillforce-backup
 
 # Close VPN tunnel

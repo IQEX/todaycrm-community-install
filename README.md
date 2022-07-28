@@ -1,166 +1,89 @@
-Здесь описывается то, как поставить TODAYCRM на свой сервер.
+Здесь описывается то, как поставить TODAYCRM на свой сервер в Yandex.Cloud.
 
-# Структура директории
+# Структура
 
-* vpn - конфиг для оргнанизации VPN канала с помощь OpenVPN
+ ┗ docs
+ ┃ ┗ VPN.md - документация, как сделать VPN туннель
+ ┗ releases
+   ┃ ┗ latest
+   ┃ ┃ ┗ download
+   ┃ ┃ ┃ ┗ package.zip - основной пакет самой последней версии системы для постоянной
+ ┗ vpn
+ ┃ ┗ client.ovpn - конфиг профиля для оргнанизации VPN канала с помощь OpenVPN Client (не включен в поставку)
+ ┗ install.sh - основной скрипт для развертывания приложения на сервере
 
-# VPN-туннель
+# Требования к окружению
 
-VPN-туннель необходим для установки пакетов, которые недоступны из РФ. Это позволяет обойти ограничения провайдеров и скачать нужные компоненты без ограничений.
+Для успешной установки вам потребуется иметь на своем компьютере
 
-## Как обновить ключи VPN
-
-1. установить в Digital Ocean сервер Ubuntu с OpenVPN Server (Free, данная версия разрешает 2 соединения)
-2. добавить учетную запись через интерфейс администратора
-3. зайти в веб-интерфейс OpenVPN Server с кредами созданного пользователя (при входе даст возможность выгрузить ovpn файлы)
-4. скачать ovpn с профилем autologon с в папку VPN под именем файла client.ovpn (данный профиль не будет просить пароль, а сразу даст возможность подключиться)
-
-### Как настроить VPN BYPASS
-
-При подключении к серверу Ubuntu и настройке туннеля VPN будет теряться сессия SSH. Чтобы этого не происходило надо настроить таблицы маршрутизации таким образом, что трафик внутри сети, где установлен сервре Ubuntu, шел минуя VPN. Для этого надо выполнить следующие действия.
-
-```
-sudo apt install net-tools
-ifconfig # получить IP адрес интрефейса eth0 %IP% (например 10.129.0.4) и %MASK% (например 10.129.0.0)
-ip route show # получить Gateway %GATEWAY% (например 10.129.0.1)
-sudo su # для добавления таблицы vpnbypass
-echo "250   vpnbypass" >> /etc/iproute2/rt_tables
-exit # выход из sudo
-sudo ip rule add from %MASK%/20 table vpnbypass
-sudo ip rule add to %MASK%/20 table vpnbypass
-sudo ip rule add to 169.254.169.254 table vpnbypass
-sudo ip route add table vpnbypass to %MASK%/20 dev eth0
-sudo ip route add table vpnbypass default via %GATEWAY% dev eth0
-```
-
-После этой настройки должен сохранить канал SSH.
-
-### Как проверить VPN
-
-```
-sudo apt update
-sudo apt install openvpn -y
-sudo openvpn --config client.ovpn # должен дойти до сообщение, что все корректно инициализровано (прервывать выполнение, поскольку оно запущено на foreground)
-sudo openvpn --config client.ovpn --daemon # запустить как демон кала (проверить в интерфейсе OpenVPN сервера наличие соединения)
-ip a show tun0 # должен быть интерфейс tun0
-curl ifconfig.me # должен вернуться вншений публичный адрес уже из канала VPN
-```
-
-### Как запустить VPN туннель
-
-Если VPN туннель настроен корректно, то запускается он как демон следующей командой
-
-```
-sudo openvpn --config client.ovpn --daemon
-```
-
-Проверить успешность запуска также можно просто проверив, какой внешний IP теперь виден.
-
-```
-curl ifconfig.me
-```
-
-### Как отключить VPN туннель
-
-```
-sudo killall openvpn
-```
-
-# Пререквизиты
-
-1. Ubuntu 20.04 (LTS)
-
-# Установка
-
-## Что будет установлено
-
-1. MongoDB 4.4.15 с официального сервера
-
+1. Windows 
+2. ssh клиент для удаленного доступа на сервер
+3. git клиент с правами на репозиторий https://github.com/IQEX/todaycrm-community.git
+4. docker desktop
+   
 ## Порядок установки
+
+1. Создайте виртуальную машину в Yandex Cloud со следующими характеристиками
+
+- ОС Ubuntu 20.04 (LTS) (чистая)
+- 15Gb SSD
+- 1 VPU (50%)
+- в качестве прав доступа укажите имя admin и закрытый ключ, который находится в папке ./deploy/.ssh_key/id_rsa.pub репозитория https://github.com/IQEX/todaycrm-community.git
+
+2. Подключитесь в ОС Ubuntu по SSH с использованием ключа ./deploy/.ssh_key/id_rsa
+
+2. Подготовьте окружение ОС Ubuntu, выполнив следующие команды
+
+Внимание: прочитайте полностью параграф до выполнения команд.
 
 ```
 cd ~ 
+mkdir ./vpn
+curl <your_vpn_ovpn_profile_config_file> --output ~/vpn/client.ovpn
 curl https://raw.githubusercontent.com/IQEX/todaycrm-community-install/main/install.sh --output ~/install.sh
 sudo chmod 755 ~/install.sh
 ./install.sh
 ```
 
-# TODO
+Обратите внимание, что client.ovpn файл не входит в состав этого репозитория. Данный файл должен быть у вас свой от вашего VPN. Как его получить - читайте ./docs/VPN.md
 
-https://api.github.com/repos/IQEX/todaycrm-community-install/releases | grep browser_download_url | grep '64[.]deb' | head -n 1 | cut -d '"' -f 4
+Также обратите внимание, что у вашего VPN канала есть внешний публичный адрес, который будет виден как ваш после установки VPN туннеля. Данный IP адрес необходимо прописать в ./install.sh в параметре OPT_VPN_PUBLIC_IP.
 
-Read this: 
+Если у вас доступны все нужные пакеты без VPN, то использование VPN можно просто отключить. Для этого в файле install.sh найдите параметр OPT_USE_VPN и поставьте его в значние false.
 
-https://docs.github.com/en/rest/releases/releases#get-the-latest-release
-
-# Установка MongoDB
-
-Официальная документация по установке MongoDB 4.4 на Ubuntu 20.4 приведена тут.
-https://www.mongodb.com/docs/v4.4/tutorial/install-mongodb-on-ubuntu/?_ga=2.156300795.1195631599.1658911956-375212060.1658911955
+Если ./install.sh отработал коректно, то в конце вы увидте сообщение
 
 ```
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.listlist.d/mongodb-org-4.4.list
-sudo apt-get update # у меня она заканчивается но с ошибками NOSPLIT (проигнорировать)
-sudo apt-get install -y mongodb-org=4.4.15 mongodb-org-server=4.4.15 mongodb-org-shell=4.4.15 mongodb-org-mongos=4.4.15 mongodb-org-tools=4.4.15
+DONE
 ```
 
-## Прописать MongoDB как сервис
-
-По умолчанию, сервис MongoDB уже будет зарегистрирован в системе как mongod. Для его включения достаточно дать команду
+3. Выгрузить репозиторий todaycrm-community на свою локальную машину
 
 ```
-sudo systemctl start mongod
+git clone https://github.com/IQEX/todaycrm-community.git
 ```
 
-Однако, если он будет все же не найде, то попробовать сначала перезапустить службу демонов и снова запустить mongod
+4. Отредактируйте файл ./deploy/run_docker_node.bat, заменив в нем параметр HOST_IP на значение публичного адреса созданной виртуальной машины
+
+5. Запустить сборку и развертывание решения
 
 ```
-sudo systemctl daemon-reload
-sudo systemctl start mongod
+cd \deploy
+run_docker_node.bat
 ```
 
-Проверить, что MongoDB поднялась
+После перехода в bash докер-контейнера необходимо выполнить команду сборки и развертывания решения
 
 ```
-netstat -plntu | grep ":27017" # порт 27017 должен быть задействован службой Mongo
+./deploy.sh
 ```
 
-Настроить службу на автоматическое включение при запуске системы
+В результате в случае полного успеха вы увидте сообщение вида 
 
 ```
-sudo systemctl enable mongod
+------------------------------------------------------------------------------------------------
+Please open http://${HOST_IP} in your browser to complete installtion procedure
+Use login 'deploy' and password 'deploy' for the first login into the system
+Good luck!
+------------------------------------------------------------------------------------------------
 ```
-
-
-### Альтернативный(!) способ зарегистрировать свою службу MongoDB
-
-Если по какой-то причине необходимо зарегистрировать службу MongoDB как отдельную службу, то можно выполнить выполнить следующие команды.
-
-```
-sudo cp ./mongodb/mongodb.service /etc/systemd/system/mongodb.service # ./mongodb/mongodb.service береться из пакета этого дистрибутива
-sudo systemctl daemon-reload
-sudo systemctl start mongodb
-```
-
-
-# Удаление
-
-## Удаление MongoDB
-
-Для удаление пакетов официальной MongoDB используйте команду
-
-```
-sudo apt-get purge mongodb-org*
-```
-
-Для удаление пакетов неофициальной MongoDB, установленной с зеркала Yandex
-
-```
-sudo apt-get purge mongodb*
-```
-
-
-# Если понадобится NVM
-
-https://tecadmin.net/how-to-install-nvm-on-ubuntu-20-04/
