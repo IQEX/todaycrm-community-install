@@ -154,6 +154,7 @@ if $OPT_USE_VPN ; then
 fi
 
 # Install MongoDB
+# ----------------------------------------------------------------------------------
 
 if $OPT_INSTALL_MONGODB ; then
 
@@ -199,6 +200,7 @@ if $OPT_INSTALL_MONGODB ; then
 fi
 
 # Check MongoDB connection...
+# ----------------------------------------------------------------------------------
 
 echo "MONGO: Check connection..."
 mongo --version | head -n 1 && sleep 5
@@ -212,6 +214,7 @@ else
 fi
 
 # Install NodeJS
+# ----------------------------------------------------------------------------------
 
 if $OPT_INSTALL_NODEJS ; then
 
@@ -239,6 +242,7 @@ if $OPT_INSTALL_NODEJS ; then
 fi
 
 # Install NVM
+# ----------------------------------------------------------------------------------
 
 if $OPT_INSTALL_NVM ; then
 
@@ -264,6 +268,7 @@ if $OPT_INSTALL_NVM ; then
 fi
 
 # Install PM2
+# ----------------------------------------------------------------------------------
 
 if $OPT_INSTALL_PM2 ; then
 
@@ -280,6 +285,7 @@ else
 fi
 
 # Install HTTPD
+# ----------------------------------------------------------------------------------
 
 if $OPT_INSTALL_HTTPD ; then
 
@@ -299,6 +305,7 @@ fi
 [ -d /opt/skillforce ] || sudo mkdir /opt/skillforce
 [ -d /opt/skillforce-update ] || sudo mkdir /opt/skillforce-update
 [ -d /opt/skillforce-backup ] || sudo mkdir /opt/skillforce-backup
+[ -d /var/lib/sf-uploads ] || sudo mkdir /var/lib/sf-uploads
 
 # Set permisions (allow remote update /var/www)
 
@@ -306,6 +313,7 @@ sudo chown -R admin:admin /var/www
 sudo chown -R admin:admin /opt/skillforce
 sudo chown -R admin:admin /opt/skillforce-update
 sudo chown -R admin:admin /opt/skillforce-backup
+sudo chown -R admin:admin /var/lib/sf-uploads
 
 # Close VPN tunnel
 
@@ -318,4 +326,3 @@ echo "DONE"
 
 # echo "Run PM2 Dashboard"
 # pm2 dash
-
